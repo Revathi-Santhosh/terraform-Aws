@@ -25,14 +25,6 @@ module "collossus_public_subnet" {
   }
 }
 
-module "collossus_private_subnet" {
-  source = "../modules/subnet"
-  vpc_id     = module.colossus_vpc.id
-  cidr_block = "10.1.6.0/24"
-  tags = {
-    Name = "collossus_private_subnet"
-  }
-}
 
 
 module "colossus_pub_rt" {
@@ -43,13 +35,7 @@ module "colossus_pub_rt" {
   }
 }
 
-module "colossus_priv_rt" {
-  source = "../modules/routetable"
-  vpc_id = module.colossus_vpc.id
-  tags = {
-    Name = "colossus_privateroute"
-  }
-}
+
 
 module "pub_igw_associate" {
 
@@ -69,64 +55,126 @@ module "colossus_rta_cidr" {
   route_table_id = module.colossus_pub_rt.id
 }
 
-module "colossus_sec_group" {
+module "jenkins_sec_group" {
   source = "../modules/Sg"
-  name        = "colossus_sg"
+  name        = "jenkins_security_group"
   description = "security group for colossus"
-  http_ingress_description = "Allowing http port"
-  http_cidr_block = ["0.0.0.0/0"]
-  ssh_ingress_description = "Allowing ssh port"
-  ssh_cidr_block = ["0.0.0.0/0"]
   vpc_id      = module.colossus_vpc.id
   tags = {
-    Name = "colossus_securitygrp"
+    Name = "jenkins_securtity_group"
   }
 
 }
 
-module "colossus_ec2_public_instance" {
+module "jenkins_ssh_rule"{
+  source ="../modules/sg_group"
+  inbound_type = "ingress"
+  from_port  = 22
+  to_port = 22
+  protocol = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+  security_group_id = module.jenkins_sec_group.id
+}
+module "jenkins_http_rule"{
+  source ="../modules/sg_group"
+  inbound_type = "ingress"
+  from_port  = 80
+  to_port = 80
+  protocol = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+  security_group_id = module.jenkins_sec_group.id
+}
+module "jenkins_https_rule"{
+  source ="../modules/sg_group"
+  inbound_type = "ingress"
+  from_port  = 443
+  to_port = 443
+  protocol = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+  security_group_id = module.jenkins_sec_group.id
+}
+
+module "jenkins_app_rule"{
+  source ="../modules/sg_group"
+  inbound_type = "ingress"
+  from_port  = 8080
+  to_port = 8080
+  protocol = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+  security_group_id = module.jenkins_sec_group.id
+}
+
+module "nexus_sec_group" {
+  source = "../modules/Sg"
+  name        = "nexus_secuirty_group"
+  description = "security group for colossus"
+  vpc_id      = module.colossus_vpc.id
+  tags = {
+    Name = "nexus_security_group"
+  }
+
+}
+
+module "nexus_ssh_rule"{
+  source ="../modules/sg_group"
+  inbound_type = "ingress"
+  from_port  = 22
+  to_port = 22
+  protocol = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+  security_group_id = module.nexus_sec_group.id
+}
+module "nexus_http_rule"{
+  source ="../modules/sg_group"
+  inbound_type = "ingress"
+  from_port  = 80
+  to_port = 80
+  protocol = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+  security_group_id = module.nexus_sec_group.id
+}
+module "nexus_https_rule"{
+  source ="../modules/sg_group"
+  inbound_type = "ingress"
+  from_port  = 443
+  to_port = 443
+  protocol = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+  security_group_id = module.nexus_sec_group.id
+}
+
+module "nexus_app_rule"{
+  source ="../modules/sg_group"
+  inbound_type = "ingress"
+  from_port  = 8081
+  to_port = 8081
+  protocol = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+  security_group_id = module.nexus_sec_group.id
+}
+
+module "jenkins_ec2_public_instance" {
   source = "../modules/Ec2"
   ami = "ami-039a49e70ea773ffc"
   instance_type = "t2.micro"
-  security_groups = [module.colossus_sec_group.id]
+  security_groups = [module.jenkins_sec_group.id]
   subnet_id = module.collossus_public_subnet.id
-  key_name = "ansible-jenk.pem"
+  key_name = "jenkins"
   associate_public_ip_address  = true
   tags = {
-    Name = "colossus_public_instance"
+    Name = "jenkins"
   }
 }
 
-
-module "colossus_ec2_private_instance" {
+module "nexus_ec2_public_instance" {
   source = "../modules/Ec2"
   ami = "ami-039a49e70ea773ffc"
-  instance_type = "t2.micro"
-  security_groups = [module.colossus_sec_group.id]
-  subnet_id = module.collossus_private_subnet.id
+  instance_type = "t2.medium"
+  security_groups = [module.nexus_sec_group.id]
+  subnet_id = module.collossus_public_subnet.id
+  key_name = "jenkins"
   associate_public_ip_address  = true
-  key_name = "ansible-jenk.pem"
   tags = {
-    Name = "collossus_private_instance"
+    Name = "nexus"
   }
-}
-
-module "colossus_launchconfiguration" {
-  source = "../modules/Launchconfiguration"
-  name = "colossus_launchconf"
-  image_id = "ami-039a49e70ea773ffc"
-  instance_type = "t2.micro"
-  key_name = "ansible-jenk.pem"
-  security_groups = [module.colossus_sec_group.id]
-}
-
-module "colossus_autoscalinggroup" {
-  source = "../modules/ASG"
-  name = "colossus_autoscaling"
-  launch_configuration = module.colossus_launchconfiguration.name
-  min_size = 2
-  max_size = 3
-  vpc_zone_identifier = [module.collossus_public_subnet.id]
-
-
 }

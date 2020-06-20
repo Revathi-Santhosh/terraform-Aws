@@ -1,8 +1,8 @@
 terraform {
   backend "s3" {
-    bucket = "devstatebackendterraform"
-    key    = "awsdevremotestatefile"
+    bucket = "demonexus999"
+    key    = "awsdevremotestatefile_hanu"
     region = "us-east-1"
-    profile = "terraformstate"
+    profile = "dev-hanu"
   }
 }
