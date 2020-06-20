@@ -1,0 +1,5 @@
+1. Create the architecture of creating a public and private subnet -- donr
+2. Write modules for vpc.igw, route table and subnet_id -- tags pending , statetfile pending, provider.f
+3. Investigate attaching igw to vpc
+4. Investigate attaching igw to the route table
+5. Investigate attaching route table to subnet
